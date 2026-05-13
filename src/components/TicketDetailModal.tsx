@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Ticket, PaymentMethod } from '../types';
+import { useState } from 'react';
+import { PaymentMethod } from '../types';
 import { useTicketStore } from '../store/useTicketStore';
 import { X, Trash2, Check, Save } from 'lucide-react';
 
@@ -46,8 +46,8 @@ export default function TicketDetailModal({ ticketNumber, onClose }: Props) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
         >
           <X size={24} />
@@ -63,29 +63,29 @@ export default function TicketDetailModal({ ticketNumber, onClose }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Nombre del comprador</label>
-              <input 
-                className="input" 
-                value={name} 
-                onChange={e => setName(e.target.value)} 
+              <input
+                className="input"
+                value={name}
+                onChange={e => setName(e.target.value)}
                 placeholder="Nombre completo"
               />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Teléfono</label>
-              <input 
-                className="input" 
-                value={phone} 
-                onChange={e => setPhone(e.target.value)} 
+              <input
+                className="input"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
                 placeholder="Número celular"
               />
             </div>
 
             <div>
               <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Método de pago</label>
-              <select 
-                className="select" 
-                value={paymentMethod} 
+              <select
+                className="select"
+                value={paymentMethod}
                 onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
               >
                 <option value="">Selecciona método</option>
