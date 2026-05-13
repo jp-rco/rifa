@@ -33,14 +33,15 @@ export const useTicketStore = create<TicketStore>()(
   persist(
     (set, get) => ({
       tickets: generateInitialTickets(),
-      
+
       initializeTickets: () => set({ tickets: generateInitialTickets() }),
-      
+
       fetchFromSupabase: async () => {
+        if (!supabase) return; // Skip if Supabase is not configured
         try {
           const { data, error } = await supabase.from('tickets').select('*');
           if (error) throw error;
-          
+
           if (data && data.length > 0) {
             const remoteTickets: Record<string, Ticket> = { ...get().tickets };
             data.forEach((t: Ticket) => {
@@ -61,6 +62,7 @@ export const useTicketStore = create<TicketStore>()(
           },
         }));
 
+        if (!supabase) return; // Skip if Supabase is not configured
         try {
           const updated = get().tickets[number];
           await supabase.from('tickets').upsert(updated);
@@ -70,7 +72,7 @@ export const useTicketStore = create<TicketStore>()(
       },
 
       registerSale: async (number, data) => {
-        let newStatus: TicketStatus = data.status || (data.paid ? 'vendido' : 'pendiente');
+        const newStatus: TicketStatus = data.status || (data.paid ? 'vendido' : 'pendiente');
         set((state) => ({
           tickets: {
             ...state.tickets,
@@ -83,6 +85,7 @@ export const useTicketStore = create<TicketStore>()(
           },
         }));
 
+        if (!supabase) return; // Skip if Supabase is not configured
         try {
           const updated = get().tickets[number];
           await supabase.from('tickets').upsert(updated);
@@ -109,8 +112,8 @@ export const useTicketStore = create<TicketStore>()(
           },
         }));
 
+        if (!supabase) return; // Skip if Supabase is not configured
         try {
-          // Instead of deleting, we update the ticket back to 'disponible' state to keep 100 fixed rows if preferred
           await supabase.from('tickets').upsert(resetTicket);
         } catch (e) {
           console.error("Error syncing clear to Supabase:", e);
