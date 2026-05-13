@@ -1,14 +1,29 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Ticket, TicketStatus, PaymentMethod } from '../types';
-import { supabase } from '../services/supabase';
+import { db } from '../services/firebase';
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+} from 'firebase/firestore';
 
 interface TicketStore {
   tickets: Record<string, Ticket>;
   initializeTickets: () => void;
-  fetchFromSupabase: () => Promise<void>;
+  fetchFromFirebase: () => Promise<void>;
   updateTicket: (number: string, data: Partial<Ticket>) => void;
-  registerSale: (number: string, data: { name: string; phone: string; paymentMethod: PaymentMethod | ''; paid: boolean; status?: TicketStatus }) => void;
+  registerSale: (
+    number: string,
+    data: {
+      name: string;
+      phone: string;
+      paymentMethod: PaymentMethod | '';
+      paid: boolean;
+      status?: TicketStatus;
+    }
+  ) => void;
   clearTicket: (number: string) => void;
 }
 
@@ -29,6 +44,8 @@ const generateInitialTickets = (): Record<string, Ticket> => {
   return initial;
 };
 
+const ticketsCol = collection(db, 'tickets');
+
 export const useTicketStore = create<TicketStore>()(
   persist(
     (set, get) => ({
@@ -36,21 +53,19 @@ export const useTicketStore = create<TicketStore>()(
 
       initializeTickets: () => set({ tickets: generateInitialTickets() }),
 
-      fetchFromSupabase: async () => {
-        if (!supabase) return; // Skip if Supabase is not configured
+      fetchFromFirebase: async () => {
         try {
-          const { data, error } = await supabase.from('tickets').select('*');
-          if (error) throw error;
-
-          if (data && data.length > 0) {
+          const snapshot = await getDocs(ticketsCol);
+          if (!snapshot.empty) {
             const remoteTickets: Record<string, Ticket> = { ...get().tickets };
-            data.forEach((t: Ticket) => {
+            snapshot.forEach((docSnap) => {
+              const t = docSnap.data() as Ticket;
               remoteTickets[t.number] = t;
             });
             set({ tickets: remoteTickets });
           }
         } catch (error) {
-          console.error("Error fetching from Supabase:", error);
+          console.error('❌ Error fetching from Firebase:', error);
         }
       },
 
@@ -61,18 +76,17 @@ export const useTicketStore = create<TicketStore>()(
             [number]: { ...state.tickets[number], ...data },
           },
         }));
-
-        if (!supabase) return; // Skip if Supabase is not configured
         try {
           const updated = get().tickets[number];
-          await supabase.from('tickets').upsert(updated);
+          await setDoc(doc(db, 'tickets', number), updated);
         } catch (e) {
-          console.error("Error syncing update to Supabase:", e);
+          console.error('❌ Error syncing update to Firebase:', e);
         }
       },
 
       registerSale: async (number, data) => {
-        const newStatus: TicketStatus = data.status || (data.paid ? 'vendido' : 'pendiente');
+        const newStatus: TicketStatus =
+          data.status || (data.paid ? 'vendido' : 'pendiente');
         set((state) => ({
           tickets: {
             ...state.tickets,
@@ -84,39 +98,36 @@ export const useTicketStore = create<TicketStore>()(
             },
           },
         }));
-
-        if (!supabase) return; // Skip if Supabase is not configured
         try {
           const updated = get().tickets[number];
-          await supabase.from('tickets').upsert(updated);
+          await setDoc(doc(db, 'tickets', number), updated);
+          console.log(`✅ Ticket ${number} guardado en Firebase`);
         } catch (e) {
-          console.error("Error syncing sale to Supabase:", e);
+          console.error('❌ Error syncing sale to Firebase:', e);
         }
       },
 
       clearTicket: async (number) => {
-        const resetTicket = {
+        const resetTicket: Ticket = {
           number,
           name: '',
           phone: '',
           paymentMethod: '' as PaymentMethod | '',
           paid: false,
           purchaseDate: '',
-          status: 'disponible' as TicketStatus,
+          status: 'disponible',
         };
-
         set((state) => ({
           tickets: {
             ...state.tickets,
             [number]: resetTicket,
           },
         }));
-
-        if (!supabase) return; // Skip if Supabase is not configured
         try {
-          await supabase.from('tickets').upsert(resetTicket);
+          await setDoc(doc(db, 'tickets', number), resetTicket);
+          console.log(`✅ Ticket ${number} limpiado en Firebase`);
         } catch (e) {
-          console.error("Error syncing clear to Supabase:", e);
+          console.error('❌ Error syncing clear to Firebase:', e);
         }
       },
     }),

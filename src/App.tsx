@@ -4,30 +4,15 @@ import HomeScreen from './screens/HomeScreen';
 import SoldTicketsScreen from './screens/SoldTicketsScreen';
 import AvailableTicketsScreen from './screens/AvailableTicketsScreen';
 import { Home, ListChecks, Ticket as TicketIcon } from 'lucide-react';
-import { supabase } from './services/supabase';
+
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'home' | 'sold' | 'available'>('home');
-  const { fetchFromSupabase } = useTicketStore();
+  const { fetchFromFirebase } = useTicketStore();
 
   useEffect(() => {
-    // Test de conexión: verifica que Supabase responde
-    async function testSupabaseConnection() {
-      if (!supabase) {
-        console.error('❌ Supabase no está configurado. Revisa las variables de entorno.');
-        return;
-      }
-      const { data, error } = await supabase.from('tickets').select('*').limit(1);
-      if (error) {
-        console.error('❌ Error conectando a Supabase:', error.message);
-      } else {
-        console.log('✅ Supabase conectado correctamente. Datos:', data);
-      }
-    }
-
-    testSupabaseConnection();
-    fetchFromSupabase();
-  }, [fetchFromSupabase]);
+    fetchFromFirebase();
+  }, [fetchFromFirebase]);
 
   return (
     <div className="app-container">
